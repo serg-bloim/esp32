@@ -5,6 +5,9 @@ void setup(){}
 void loop(){}
 #else
 
+#include <HardwareSerial.h>
+HardwareSerial SerialPort(1);
+
 #include "USB.h"
 #include "USBHIDKeyboard.h"
 USBHIDKeyboard Keyboard;
@@ -19,9 +22,8 @@ void setup() {
   // initialize control over the keyboard:
   Keyboard.begin();
   USB.begin();
-  Serial.setPins(37,39);
-  Serial.begin(9600);
-  Serial.println("Started");
+  SerialPort.begin(9600, SERIAL_8N1, 37, 39);
+  SerialPort.println("Started");
 }
 void loop() {
   // read the pushbutton:
@@ -34,7 +36,7 @@ void loop() {
     counter++;
     // type out a message
     auto msg = "You pressed the button " + String(counter) + " times.";
-    Serial.println(msg);
+    SerialPort.println(msg);
 
     Keyboard.println(msg);
   }
