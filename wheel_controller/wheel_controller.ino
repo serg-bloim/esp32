@@ -23,7 +23,9 @@ void setup() {
   Keyboard.begin();
   USB.begin();
   SerialPort.begin(9600, SERIAL_8N1, 37, 39);
+  SerialPort.println("");
   SerialPort.println("Started");
+  led_start();
 }
 void loop() {
   // read the pushbutton:
