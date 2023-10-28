@@ -1,29 +1,38 @@
-#define PIN_ROTOR_DATA_1 3
-#define PIN_ROTOR_DATA_2 5
-void rotor_init(){
-  pinMode(PIN_ROTOR_DATA_1, INPUT_PULLUP);
-  pinMode(PIN_ROTOR_DATA_2, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(PIN_ROTOR_DATA_1), rotor_upd, CHANGE);
-  rotor_monitor_start();
-}
+#define PIN_ROTOR_DATA_1 37
+#define PIN_ROTOR_DATA_2 39
 
 volatile int encoder_value = 0; // Global variable for storing the encoder position
 volatile int changed_times = 0; // Global variable for storing the encoder position
+volatile int rtr_min = 0;
+volatile int rtr_max = 100;
+volatile float rtr_factor = 1;
+
+void rotor_init(int min, int max, float factor){
+  pinMode(PIN_ROTOR_DATA_1, INPUT_PULLUP);
+  pinMode(PIN_ROTOR_DATA_2, INPUT_PULLUP);
+  rtr_min = (int)(min*factor);
+  rtr_max = (int)(max*factor);
+  rtr_factor = factor;
+  attachInterrupt(digitalPinToInterrupt(PIN_ROTOR_DATA_1), rotor_upd, CHANGE);
+  rotor_monitor_start();
+}
 void rotor_upd(){
   // Reading the current state of encoder A and B
   changed_times++;
   int A = digitalRead(PIN_ROTOR_DATA_1);
   int B = digitalRead(PIN_ROTOR_DATA_2);
+  int new_val = encoder_value;
   // If the state of A changed, it means the encoder has been rotated
   if ((A == HIGH) != (B == LOW)) {
-    encoder_value--;
+    new_val--;
   } else {
-    encoder_value++;
+    new_val++;
   }
+  encoder_value = cap(new_val, rtr_min, rtr_max);
 }
 
 int rotor_read(){
-  return encoder_value;
+  return (int)(encoder_value/rtr_factor);
 }
 
 void rotor_monitor_task(void * parameter){
