@@ -37,7 +37,7 @@ void setup() {
   SerialPort.println("");
   SerialPort.println("Started");
   led_start();
-  rotor_init(0, 1000, 2);
+  rotor_init(0, 1024, 2);
   Joystick.begin();
   Joystick.setAccelerator(0);
 }

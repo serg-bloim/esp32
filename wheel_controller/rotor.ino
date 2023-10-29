@@ -1,5 +1,6 @@
 #define PIN_ROTOR_DATA_1 37
 #define PIN_ROTOR_DATA_2 39
+const int RESET_BTN_PIN = 0;
 
 volatile int encoder_value = 0; // Global variable for storing the encoder position
 volatile int changed_times = 0; // Global variable for storing the encoder position
@@ -14,7 +15,12 @@ void rotor_init(int min, int max, float factor){
   rtr_max = (int)(max*factor);
   rtr_factor = factor;
   attachInterrupt(digitalPinToInterrupt(PIN_ROTOR_DATA_1), rotor_upd, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(RESET_BTN_PIN), zero_wheel, RISING);
   rotor_monitor_start();
+  zero_wheel();
+}
+void zero_wheel(){
+  encoder_value = (rtr_min + rtr_max)/2;
 }
 void rotor_upd(){
   // Reading the current state of encoder A and B
