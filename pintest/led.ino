@@ -3,7 +3,7 @@ void led_task(void * parameter){
   const int LED_PIN = 15;
   pinMode(LED_PIN, OUTPUT);
   bool state = false;
-  Serial.println("LED task is running");
+  SerialPort.println("LED task is running");
   while (true) {
     digitalWrite(LED_PIN, state);
     state = !state;
@@ -11,7 +11,7 @@ void led_task(void * parameter){
   }
 }
 void led_start(){
-  Serial.println("Creating the LED task");
+  SerialPort.println("Creating the LED task");
   xTaskCreate(
     led_task,
     "TSK_LED",
@@ -20,5 +20,5 @@ void led_start(){
     1,
     NULL
   );
-  Serial.println("Created the LED task");
+  SerialPort.println("Created the LED task");
 }

@@ -1,3 +1,6 @@
+#include <motor.h>
+
+Motor motor;
 const int PIN_FWD = 12;
 const int PIN_BWD = 14;
 #define PWM1_Ch    0
