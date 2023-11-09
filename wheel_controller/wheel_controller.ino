@@ -3,13 +3,20 @@
 err void setup() {}
 void loop() {}
 #else
-
+#define M_STRING(s) #s
+#define M_WRAP(s) M_STRING(s)
+#define INSPECT(v) Serial.println(String(#v) + " : " + M_WRAP(v))
 #include <HardwareSerial.h>
 #include "motor.h"
+// ConfigManager cfgManager(SerialPort);
 #include "USB.h"
 #include "USBHIDMouse.h"
+// #include "USBHIDGamepad.h"
 #include <Joystick_ESP32S2.h>
+// USBHIDKeyboard Keyboard;
 USBHIDMouse Mouse;
+// USBHIDGamepad Gamepad;
+const uint8_t MY_JOYSTICK_REPORT_ID = 0x05;
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,
                    JOYSTICK_TYPE_MULTI_AXIS, 0, 0,
                    false, false, false, false, false, false,
@@ -32,11 +39,26 @@ void setup() {
   // initialize control over the keyboard:
   // Keyboard.begin();
   // Gamepad.begin();
-  // Mouse.begin();
+  Mouse.begin();
   USB.begin();
+  #define CORE_DEBUG_LEVEL 2
   Serial.setPins(1, 2);
   Serial.begin(9600);
   Serial.println("Start Serial");
+  
+  INSPECT(ARDUHAL_LOG_LEVEL_ERROR);
+  INSPECT(CORE_DEBUG_LEVEL);
+  INSPECT(ARDUHAL_LOG_LEVEL);
+  INSPECT(USE_ESP_IDF_LOG);
+  INSPECT(LOG_LOCAL_LEVEL);
+  INSPECT(log_e);
+  INSPECT(ESP_LOGE);
+  INSPECT(LOG_TEST);
+  INSPECT(COMPILER_OPT);
+  
+  ESP_LOGE("123", "%d", 987);
+  log_e("1234567890");
+  log_printf("1111111111111");
   led_start();
   rotor_init();
   Joystick.begin();
@@ -80,9 +102,7 @@ void loop() {
   }else{
     head_dir = 0;
   }
-  if(false){
-    turn_head();
-  }
+  turn_head();
 }
 void turn_head(){
   int goal = head_dir*head_boundary;
@@ -90,10 +110,14 @@ void turn_head(){
   step = constrain(step, -head_step, head_step);
   auto now = millis();
   if(step != 0 && now-time_last_loop >= 0){
-    time_last_loop = now;
-    Serial.println(String("step: ")+step);
-    head_state += step;
-    // Mouse.move(step, 0);
+    // if(Mouse.hid.ready()){
+      time_last_loop = now;
+      Serial.println(String("step: ")+step);
+      head_state += step;
+      Mouse.move(step, 0);
+    // }else{
+    //   Serial.println("Mouse hid is not ready");
+    // }
   }
 }
 bool motor_boundary_react(int rotor_pos, int limit, int dir) {
