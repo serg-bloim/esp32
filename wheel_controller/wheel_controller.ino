@@ -67,8 +67,8 @@ void setup() {
 }
 int head_dir = 0;
 int head_state = 0;
-int head_step = 5;
-int head_boundary = 100;
+int head_step = 10;
+int head_boundary = 600;
 int time_since_last_loop = 0;
 unsigned long time_last_loop = 0;
 void loop() {
@@ -94,13 +94,22 @@ void loop() {
     motor.stop();
   }
   if(digitalRead(btn_look_left) == LOW){
+    if( head_dir != -1){
     head_dir = -1;
+    Mouse.move(0, 0);
+    }
     // Serial.println("Turning left");
   }else if(digitalRead(btn_look_right) == LOW){
+    if(head_dir != 1){
     head_dir = 1;
+    Mouse.move(0, 0);
+    }
     // Serial.println("Turning right");
   }else{
+    if(head_dir != 0){
     head_dir = 0;
+    // Mouse.move(1, 0);
+    }
   }
   turn_head();
 }
@@ -110,14 +119,15 @@ void turn_head(){
   step = constrain(step, -head_step, head_step);
   auto now = millis();
   if(step != 0 && now-time_last_loop >= 0){
-    // if(Mouse.hid.ready()){
+    if(Mouse.hid.ready()){
       time_last_loop = now;
-      Serial.println(String("step: ")+step);
       head_state += step;
       Mouse.move(step, 0);
-    // }else{
-    //   Serial.println("Mouse hid is not ready");
-    // }
+      // Serial.println(String("step: ")+step + " head_state: " + head_state);
+      // delay(10);
+    }else{
+      Serial.println("Mouse hid is not ready");
+    }
   }
 }
 bool motor_boundary_react(int rotor_pos, int limit, int dir) {

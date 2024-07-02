@@ -13,7 +13,7 @@ void rotor_init(){
   pinMode(PIN_ROTOR_DATA_2, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_ROTOR_DATA_1), rotor_upd, CHANGE);
   attachInterrupt(digitalPinToInterrupt(RESET_BTN_PIN), zero_wheel, RISING);
-  rotor_monitor_start();
+  // rotor_monitor_start();
   zero_wheel();
 }
 void zero_wheel(){
