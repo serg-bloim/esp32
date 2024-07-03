@@ -1,4 +1,3 @@
-// ver 4
 #include <PS4Controller.h>
 #include <CRC16.h>
 #include <CRC.h>
@@ -35,16 +34,16 @@ void setup() {
   Serial1.begin(115200, SERIAL_8N1, 16, 17);
   PS4.begin("a8:2b:b9:45:ac:89");
 }
-
+int ps4 = 0;
 void loop() {
   // Below has all accessible outputs from the controller
-  if (PS4.isConnected()) {
-    Serial.printf("%4d %4d %4d %4d\n", PS4.LStickX(), PS4.LStickY(), PS4.RStickX(), PS4.RStickY());
-
+  auto ms = millis();
+  int report_period = 100;
+  if (PS4.isConnected() && ms/report_period != ps4) {
+    ps4 = ms/report_period;
     reportPS4State();
     // This delay is to make the output more human readable
     // Remove it when you're not trying to see the output
-    delay(1000);
   }
   check_led();
 }
@@ -77,15 +76,16 @@ void reportPS4State() {
     PS4.AccY(),
     PS4.AccZ(),
   };
-  Serial.printf("%4d %4d %4d %4d\n", controlParams[0], controlParams[1], controlParams[2], controlParams[3]);
+  auto btns = encodePS4Buttons();
+  char bitsString[33]; // Assuming 32-bit int + 1 for null terminator
+  Serial.printf("%4d %4d %4d %4d %s\n", controlParams[0], controlParams[1], controlParams[2], controlParams[3], intToBitsString(btns.data, bitsString));
   uint8_t len = 4 + 3 + 4 + sizeof(controlParams) + sizeof(gyroParams) + 2;
   Serial.println("Message of size: " + String(len));
   crc.restart();
-  write(0xA6);
+  writeByte(0xA6);
   writeByte(0x10);
   writeByte(len);
   writeByte(0xB5);
-  auto btns = encodePS4Buttons();
   writeByte(btns.len);
   writeByte(arraySize(controlParams));
   writeByte(arraySize(gyroParams));
@@ -100,7 +100,7 @@ void reportPS4State() {
     UNION_INT(16)
     data;
     data.v = p;
-    writeByte(data.uv);
+    write(data.uv);
   }
   CharArrayUnion<uint16_t> buf;
   buf.v = crc.calc();
@@ -146,11 +146,19 @@ void writeByte(uint8_t byte) {
   Serial1.write(byte);
   crc.add(byte);
 }
-void write(uint32_t byte) {
-  CharArrayUnion<uint32_t> buf;
-  buf.v = byte;
-  Serial1.write(byte);
+template<typename T>
+void write(T dat) {
+  CharArrayUnion<T> buf;
+  buf.v = dat;
   for (auto c : buf.charArray) {
-    crc.add(c);
+    writeByte(c);
   }
+}
+char* intToBitsString(int num, char* bitsString) {
+    int numBits = sizeof(num) * 8; // Number of bits in an int
+    for (int i = numBits - 1; i >= 0; --i) {
+        bitsString[numBits - 1 - i] = ((num & (1 << i)) != 0) ? '1' : '0';
+    }
+    bitsString[numBits] = '\0'; // Null-terminate the string
+    return bitsString;
 }
