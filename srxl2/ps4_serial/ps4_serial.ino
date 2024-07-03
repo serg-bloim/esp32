@@ -1,3 +1,4 @@
+// ver 4
 #include <PS4Controller.h>
 #include <CRC16.h>
 #include <CRC.h>
@@ -38,7 +39,7 @@ int ps4 = 0;
 void loop() {
   // Below has all accessible outputs from the controller
   auto ms = millis();
-  int report_period = 100;
+  int report_period = 1;
   if (PS4.isConnected() && ms/report_period != ps4) {
     ps4 = ms/report_period;
     reportPS4State();
@@ -60,11 +61,13 @@ constexpr size_t arraySize(T (&)[N]) {
 }
 
 void reportPS4State() {
-  int8_t controlParams[] = {
+  int8_t axisParams[] = {
     PS4.data.analog.stick.lx,
     -PS4.data.analog.stick.ly,
     PS4.data.analog.stick.rx,
     -PS4.data.analog.stick.ry,
+  };
+  uint8_t triggerParams[] = {
     PS4.L2Value(),
     PS4.R2Value(),
   };
@@ -78,8 +81,8 @@ void reportPS4State() {
   };
   auto btns = encodePS4Buttons();
   char bitsString[33]; // Assuming 32-bit int + 1 for null terminator
-  Serial.printf("%4d %4d %4d %4d %s\n", controlParams[0], controlParams[1], controlParams[2], controlParams[3], intToBitsString(btns.data, bitsString));
-  uint8_t len = 4 + 3 + 4 + sizeof(controlParams) + sizeof(gyroParams) + 2;
+  Serial.printf("%4d %4d %4d %4d %s\n", axisParams[0], axisParams[1], axisParams[2], axisParams[3], intToBitsString(btns.data, bitsString));
+  uint8_t len = 4 + 4 + 4 + sizeof(axisParams) + sizeof(triggerParams) + sizeof(gyroParams) + 2;
   Serial.println("Message of size: " + String(len));
   crc.restart();
   writeByte(0xA6);
@@ -87,14 +90,18 @@ void reportPS4State() {
   writeByte(len);
   writeByte(0xB5);
   writeByte(btns.len);
-  writeByte(arraySize(controlParams));
+  writeByte(arraySize(axisParams));
+  writeByte(arraySize(triggerParams));
   writeByte(arraySize(gyroParams));
   write(btns.data);
-  for (auto p : controlParams) {
+  for (auto p : axisParams) {
     UNION_INT(8)
     data;
     data.v = p;
     writeByte(data.uv);
+  }
+  for (auto p : triggerParams) {
+    writeByte(p);
   }
   for (auto p : gyroParams) {
     UNION_INT(16)
