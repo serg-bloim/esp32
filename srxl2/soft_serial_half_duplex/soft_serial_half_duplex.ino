@@ -41,6 +41,8 @@ void check_serial() {
   char hexString[3];  // Buffer to hold the hexadecimal string (2 characters + null terminator)
   auto& src = Serial;
   auto& dst = swSer1;
+  if (!tx && dst.available())
+    Serial.write(dst.read());
   if (src.available()) {
     auto byte = src.read();
     sprintf(hexString, "%02X", byte);
@@ -75,7 +77,6 @@ void check_serial() {
     dst.write(byte);
   } else {
     if (serial_state == SERIAL_STATE_WAITING_4_A6 && tx) {
-      // if (micros() - msg_ended > 1000)
           tx = false;
           dst.enableTx(tx);
     }
