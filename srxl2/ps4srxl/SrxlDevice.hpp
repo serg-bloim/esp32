@@ -91,10 +91,17 @@ public:
     }
     size_t do_send()
     {
+        serial.enableTx(true);
+        serial.write(next_msg.c_str(), next_msg.len());
+        serial.enableTx(false);
     }
     uint32_t message_queue_len()
     {
         return has_next_msg ? 1 : 0;
     }
+};
+
+class SrxlMaster : SrxlDevice{
+
 };
 #endif // SrxlDevice_H
