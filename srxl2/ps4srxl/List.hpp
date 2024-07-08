@@ -9,8 +9,9 @@ private:
   size_t _size = 0;
 
 public:
-  typedef T* iterator;
-  typedef const T* const_iterator;
+  typedef T *iterator;
+  typedef const T *const_iterator;
+
   iterator begin()
   {
     return &data[0];
@@ -54,7 +55,8 @@ public:
     }
     return false;
   }
-  size_t size(){
+  size_t size()
+  {
     return _size;
   }
 };
