@@ -11,6 +11,10 @@ const byte SRXL_PTYPE_HANDSHAKE = 0x21;
 const SrxlDeviceID DEVICES_REMOTE_RECEIVER = 0x10;
 const SrxlDeviceID DEVICES_TRANSMITTER = 0x31;
 
+enum SRXL_PACKET_TYPE : byte{
+    PT_HANDSHAKE = 0x21,
+    PT_CONTROL = 0xCD,
+};
 template <typename T>
 void little2big_endian(T &v)
 {
@@ -57,12 +61,24 @@ public:
         write(crcVal);
     }
 };
-struct SrxlGenericPack
+template<typename T>
+struct __attribute__((packed)) SrxlTypedPack
 {
     byte type;
     byte len;
-    byte data[75];
     uint16_t crc;
+    T data;
+};
+using SrxlGenericPack = SrxlTypedPack<byte[75]>;
+struct __attribute__((packed)) PL_HANDSHAKE
+{
+    byte src_id;
+    byte dst_id;
+    byte priority;
+    byte baud;
+    byte info;
+    uint32_t uid;
 };
 
+using SrxlHandshakePack = SrxlTypedPack<PL_HANDSHAKE>;
 #endif // SrxlCommon_H
