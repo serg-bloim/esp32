@@ -46,10 +46,10 @@ public:
         writeAt(2, len);
 
         CRC16 crc(CRC16_XMODEM_POLYNOME,
-          CRC16_XMODEM_INITIAL,
-          CRC16_XMODEM_XOR_OUT,
-          CRC16_XMODEM_REV_IN,
-          CRC16_XMODEM_REV_OUT);
+                  CRC16_XMODEM_INITIAL,
+                  CRC16_XMODEM_XOR_OUT,
+                  CRC16_XMODEM_REV_IN,
+                  CRC16_XMODEM_REV_OUT);
 
         crc.add(c_str(), len);
         auto crcVal = crc.calc();
@@ -57,4 +57,12 @@ public:
         write(crcVal);
     }
 };
+struct SrxlGenericPack
+{
+    byte type;
+    byte len;
+    byte data[75];
+    uint16_t crc;
+};
+
 #endif // SrxlCommon_H

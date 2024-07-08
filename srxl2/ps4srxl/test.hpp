@@ -1,7 +1,5 @@
 #ifndef ByteBuffer_H
 #define ByteBuffer_H
-#include <Arduino.h>
-#include "usings.h"
 
 template <size_t BUF_SIZE>
 class ByteBuffer
@@ -51,24 +49,10 @@ class CycledByteBuffer
 private:
     byte buf[BUF_SIZE];
     size_t start = 0;
-    size_t end = 0;
-    char stasBuf[50];
-    char buf2[50];
+    size_t end = -1;
 
 public:
     CycledByteBuffer() {}
-
-    char *stats()
-    {
-        for (int i = 0; i < BUF_SIZE; i++)
-        {
-            sprintf(buf2 + i * 2, "%02X", buf[i]);
-        }
-        buf2[BUF_SIZE * 2] = 0;
-
-        sprintf(stasBuf, "start: %d, end: %d, len(): %d, data: %s", start, end, len(), buf2);
-        return stasBuf;
-    }
     template <typename T>
     size_t write(T data)
     {
@@ -94,14 +78,18 @@ public:
         {
             size_t part1_len = BUF_SIZE - end;
             memcpy(buf + end, &data, part1_len);
-            memcpy(buf, ((byte *)&data) + part1_len, sz - part1_len);
+            memcpy(buf, &data + part1_len, sz - part1_len);
         }
         return sz;
+    }
+    size_t data_size()
+    {
+        size_t len = end - start;
     }
     void normalize()
     {
 #define NORMALIZE_N(var)      \
-    if (var >= BUF_SIZE)      \
+    if (end >= BUF_SIZE)      \
     {                         \
         var = var % BUF_SIZE; \
     }
@@ -114,10 +102,8 @@ public:
     }
     size_t len()
     {
-        if (end >= start)
-            return end - start;
-        else
-            return end - start + BUF_SIZE;
+        size_t len = end - start;
+        return len;
     }
     void clear()
     {
@@ -125,67 +111,28 @@ public:
         end = 0;
         // start = 0;
     }
-    byte peek(size_t offset = 0)
-    {
-        byte var;
-        peekInto(var, offset);
-        return var;
-    }
-    byte read()
-    {
-        byte var;
-        readInto(var);
-        return var;
-    }
     template <typename T>
     size_t readInto(T &dst)
     {
-        size_t sz = peekInto(dst);
-        start += sz;
-        normalize();
-        return sz;
-    }
-    template <typename T>
-    size_t peekInto(T &dst, size_t offset = 0)
-    {
         size_t sz = sizeof(T);
-        if ((offset + 1) * sz > len())
+        if (sz > len())
         {
             return 0;
         }
-        size_t read_pos = (start + offset * sz) % BUF_SIZE;
-        size_t part1_len = min(BUF_SIZE - read_pos, sz);
+
+        size_t part1_len = min(BUF_SIZE - end, sz);
         size_t part2_len = sz - part1_len;
 
-        memcpy(&dst, buf + start, part1_len);
+        memcpy(dst, buf + start, part1_len);
         if (part2_len)
         {
-            memcpy(((byte *)&dst) + part1_len, buf, part2_len);
+            memcpy(dst + part1_len, buf, part2_len);
         }
-        return sz;
-    }
-    class Iterator
-    {
-    private:
-        CycledByteBuffer &parent;
-        size_t i = 0;
-
-    public:
-        Iterator(CycledByteBuffer &parent) : parent(parent) {}
-        bool has_next()
-        {
-            return i < parent.len();
-        }
-        byte next()
-        {
-            return parent.peek(i++);
-        }
-    };
-    Iterator iterator()
-    {
-        Iterator iter(*this);
-        return iter;
+        start += sz;
+        normalize();
     }
 };
-
+void testCycledByteBuffer(){
+    
+}
 #endif // ByteBuffer_H
