@@ -4,6 +4,8 @@
 #include "usings.h"
 #include "ByteBuffer.hpp"
 #include "SrxlCommon.hpp"
+#include "crc.hpp"
+
 enum SrxlStreamReaderState {
   WAITING_FOR_HEADER,
   WAITING_FOR_PACK_TYPE,
@@ -15,11 +17,18 @@ enum SrxlStreamReaderState {
 class SrxlStreamReader {
 private:
   CycledByteBuffer<100> in_msg;
+  ByteBuffer<2> crc_buffer;
   SrxlStreamReaderState state = WAITING_FOR_HEADER;
   byte p_type;
   byte p_len;
   byte data_read;
+  Crc16XModem crc;
+  void reset_state(){
+    state = WAITING_FOR_HEADER;
+    crc.reset();
+  }
   bool process(byte data) {
+    crc.add(data);
     switch (state) {
       case WAITING_FOR_HEADER:
         if (data == SRXL_HEADER_START) {
@@ -50,10 +59,12 @@ private:
         if (data_read == p_len) {
           state = READING_CRC;
           data_read = 0;
+          crc_buffer.clear();
         }
         break;
       case READING_CRC:
         data_read++;
+        crc_buffer.write(data);
         if (data_read == 2) {
           if (check_crc()) {
             state = MESSAGE_READY;
@@ -71,7 +82,7 @@ private:
       while (in_msg.len() > 0 && !process(in_msg.peek())) {
         byte remove_me = in_msg.read();
       }
-      state = WAITING_FOR_HEADER;  // reset the state, cause process(in_msg.peek()) moved the state to the next step
+      reset_state();  // reset the state, cause process(in_msg.peek()) moved the state to the next step
       auto iter = in_msg.iterator();
       while (iter.has_next()) {
         byte data = iter.next();
@@ -86,7 +97,9 @@ private:
     return false;
   }
   bool check_crc(){
-    
+    uint16_t act = *(uint16_t*)crc_buffer.c_str();
+    uint16_t expected = crc.calc();
+    return act == expected;
   }
 
 public:
