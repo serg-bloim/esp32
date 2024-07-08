@@ -4,7 +4,7 @@
 #include <CRC16.h>
 #include <CRC.h>
 
-using SrxlByteBuffer = ByteBuffer<100>;
+using SrxlByteBuffer = StaticByteBuffer<100>;
 using SrxlDeviceID = byte;
 const byte SRXL_HEADER_START = 0xA6;
 const byte SRXL_PTYPE_HANDSHAKE = 0x21;

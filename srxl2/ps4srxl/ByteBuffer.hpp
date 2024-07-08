@@ -3,15 +3,17 @@
 #include <Arduino.h>
 #include "usings.h"
 
-template <size_t BUF_SIZE>
 class ByteBuffer
 {
 private:
-    byte buf[BUF_SIZE];
+    byte *buf;
+    size_t size;
     size_t pos = 0;
 
 public:
-    ByteBuffer() {}
+    ByteBuffer(byte *buf, size_t size) : buf(buf), size(size) {}
+    template <typename T>
+    ByteBuffer(T &buf) : ByteBuffer((byte *)buf, sizeof(T)) {}
     template <typename T>
     size_t write(T data)
     {
@@ -24,7 +26,7 @@ public:
     {
         size_t sz = sizeof(T);
 
-        if (pos >= BUF_SIZE)
+        if (pos >= size)
         {
             return 0;
         }
@@ -43,6 +45,16 @@ public:
     {
         pos = 0;
     }
+};
+
+template <size_t BUF_SIZE>
+class StaticByteBuffer : public ByteBuffer
+{
+private:
+    byte buf[BUF_SIZE];
+
+public:
+    StaticByteBuffer() : ByteBuffer(buf, BUF_SIZE) {}
 };
 
 template <size_t BUF_SIZE>

@@ -17,7 +17,8 @@ enum SrxlStreamReaderState {
 class SrxlStreamReader {
 private:
   CycledByteBuffer<100> in_msg;
-  ByteBuffer<2> crc_buffer;
+  uint16_t crc_buffer;
+  ByteBuffer crc_buffer_writer = ByteBuffer(this->crc_buffer);
   SrxlStreamReaderState state = WAITING_FOR_HEADER;
   byte p_type;
   byte p_len;
@@ -59,12 +60,12 @@ private:
         if (data_read == p_len) {
           state = READING_CRC;
           data_read = 0;
-          crc_buffer.clear();
+          crc_buffer_writer.clear();
         }
         break;
       case READING_CRC:
         data_read++;
-        crc_buffer.write(data);
+        crc_buffer_writer.write(data);
         if (data_read == 2) {
           if (check_crc()) {
             state = MESSAGE_READY;
@@ -97,9 +98,8 @@ private:
     return false;
   }
   bool check_crc(){
-    uint16_t act = *(uint16_t*)crc_buffer.c_str();
     uint16_t expected = crc.calc();
-    return act == expected;
+    return crc_buffer == expected;
   }
 
 public:
