@@ -15,6 +15,7 @@ public:
     pinMode(pin, OUTPUT);
   }
   void update(){
+    // Serial.println(1);
     if(millis() > next_ts){
       state = !state;
       digitalWrite(pin, state);

@@ -38,6 +38,14 @@ public:
     this->time_frame_start = millis();
     this->time_frame_next = time_frame_start + time_frame;
   }
+  void begin(size_t pin){
+    serial.enableRxGPIOPullUp(true);
+    serial.begin(115200, EspSoftwareSerial::Config::SWSERIAL_8N1, pin, pin, false, 256);
+    serial.enableIntTx(false);
+    serial.enableTx(true);
+    delay(123);
+    serial.enableTx(false);
+  }
   void update()
   {
     if (serial.available())
@@ -57,13 +65,19 @@ public:
       event_on_before_sending_msg(next_msg);
       do_send();
       event_on_after_sending_msg(next_msg);
+      time_frame_next += time_frame;
     }
   }
   size_t do_send()
   {
     serial.enableTx(true);
-    serial.write(next_msg.c_str(), next_msg.len());
+    // Serial.printf("serial.write(next_msg.c_str(), next_msg.len() == %d);\n", next_msg.len());
+    auto buf = "abcdefghijklmnopqrstuvwxyz";
+    auto len = 5;
+    auto sz = serial.write(buf, len);
+    Serial.printf("serial.write(buf, len) == %d\n", sz);
     serial.enableTx(false);
+    return sz;
   }
 };
 
