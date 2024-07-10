@@ -30,14 +30,18 @@ void little2big_endian(T &v)
 
 class SrxlPacketBuffer : public SrxlByteBuffer
 {
+    protected:
+    void reset(){
+        write(SRXL_HEADER_START);
+        write(p_type);
+        write((byte)0);
+    }
 public:
-    byte p_type;
+    byte p_type = SRXL_PTYPE_HANDSHAKE;
     SrxlPacketBuffer(byte p_type = 0) : SrxlByteBuffer(), p_type(p_type)
     {
         // Write header stub so write() will do right into the data section
-        write(SRXL_HEADER_START);
-        write(SRXL_PTYPE_HANDSHAKE);
-        write((byte)0);
+        reset();
     }
     const byte *get_buffer()
     {
@@ -45,9 +49,10 @@ public:
     }
     size_t pack()
     {
+        writeAt(0, SRXL_HEADER_START);
         writeAt(1, p_type);
         byte len = this->len();
-        writeAt(2, len);
+        writeAt(2, (byte)(len+2)); // +2 for
 
         CRC16 crc(CRC16_XMODEM_POLYNOME,
                   CRC16_XMODEM_INITIAL,
@@ -56,9 +61,14 @@ public:
                   CRC16_XMODEM_REV_OUT);
 
         crc.add(c_str(), len);
-        auto crcVal = crc.calc();
+        uint16_t crcVal = crc.calc();
         little2big_endian(crcVal);
         write(crcVal);
+        return 0;
+    }
+    void clear() override{
+        SrxlByteBuffer::clear();
+        reset();
     }
 };
 template<typename T>

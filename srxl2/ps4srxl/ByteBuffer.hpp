@@ -41,7 +41,7 @@ public:
     {
         return pos;
     }
-    void clear()
+    virtual void clear()
     {
         pos = 0;
     }

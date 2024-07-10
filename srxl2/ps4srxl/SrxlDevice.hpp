@@ -21,9 +21,9 @@ private:
 protected:
   SrxlDeviceID id;
   uint32_t uid = 0x524753;
-  byte baud_rate = 0;
-  byte info = 0;
-  byte priority = 0x10;
+  byte baud_rate = 1;
+  byte info = 1;
+  byte priority = 0xA;
 
   virtual void event_on_before_sending_msg(SrxlPacketBuffer &) {}
   virtual void event_on_after_sending_msg(SrxlPacketBuffer &) {}
@@ -42,8 +42,6 @@ public:
     serial.enableRxGPIOPullUp(true);
     serial.begin(115200, EspSoftwareSerial::Config::SWSERIAL_8N1, pin, pin, false, 256);
     serial.enableIntTx(false);
-    serial.enableTx(true);
-    delay(123);
     serial.enableTx(false);
   }
   void update()
@@ -71,10 +69,9 @@ public:
   size_t do_send()
   {
     serial.enableTx(true);
-    // Serial.printf("serial.write(next_msg.c_str(), next_msg.len() == %d);\n", next_msg.len());
     auto buf = "abcdefghijklmnopqrstuvwxyz";
     auto len = 5;
-    auto sz = serial.write(buf, len);
+    auto sz = serial.write(next_msg.c_str(), next_msg.len());
     Serial.printf("serial.write(buf, len) == %d\n", sz);
     serial.enableTx(false);
     return sz;
@@ -98,11 +95,11 @@ protected:
   byte handshake_order[4] = {1, 2, 0x31, 0x31};
   void event_on_before_sending_msg(SrxlPacketBuffer &msg) override
   {
-    SrxlMaster &master = *this;
-    switch (master.state)
+    Serial.printf("SrxlMaster::event_on_before_sending_msg\n");
+    switch (state)
     {
     case HANDSHAKE:
-      master.handshake(msg);
+      handshake(msg);
       break;
     case CONTROL:
       break;
@@ -112,7 +109,7 @@ protected:
   }
   void event_on_after_sending_msg(SrxlPacketBuffer &msg) override
   {
-    SrxlMaster &master = *this;
+    Serial.printf("SrxlMaster::event_on_after_sending_msg\n");
     if (handshake_order_ind == 0)
     {
       event_on_finished_handshake(state == State::CONTROL);
@@ -120,6 +117,7 @@ protected:
   }
   void event_on_received_msg(SrxlGenericPack &msg) override
   {
+    Serial.printf("SrxlMaster::event_on_received_msg");
     SrxlMaster &master = *this;
     switch (msg.type)
     {
@@ -139,6 +137,8 @@ protected:
   {
     if (handshake_order_ind == arraySize(handshake_order) && slaves.size() > 0)
     {
+      Serial.println("handshake 1");
+      msg.clear();
       state = State::CONTROL;
       byte dst_id = 0xFF;
       msg.p_type = PT_HANDSHAKE;
@@ -153,12 +153,23 @@ protected:
     }
     else
     {
+      msg.clear();
       byte dst_id = handshake_order[handshake_order_ind++];
+
+
+      // this->id = 0x10;
+      // dst_id = 0x11;
+      // this->priority = 0xa;
+      // this->baud_rate = 1;
+      // this->info = 1;
+      // this->uid = 0x782cc522;
+      Serial.printf("handshake 2 handshake_order_ind=%d, len(handshake_order) = %d\n", handshake_order_ind, arraySize(handshake_order));
+
+
       msg.p_type = PT_HANDSHAKE;
       msg.write(this->id);
       msg.write(dst_id);
-      byte priority = this->priority;
-      msg.write(priority);
+      msg.write(this->priority);
       msg.write(this->baud_rate);
       msg.write(this->info);
       msg.write(this->uid);
