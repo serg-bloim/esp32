@@ -49,12 +49,14 @@ public:
     if (serial.available())
     {
       ssr.append(serial.read());
+      // Serial.printf("ssr.size() = %d\n", ssr.size());
       if (ssr.msg_ready())
       {
         SrxlGenericPack msg;
         ssr.read_msg_into(msg);
         event_on_received_msg(msg);
       }
+      // Serial.printf("serial.available() - end\n");
     }
     auto now = millis();
     if (now > time_frame_next)
@@ -69,10 +71,9 @@ public:
   size_t do_send()
   {
     serial.enableTx(true);
-    auto buf = "abcdefghijklmnopqrstuvwxyz";
-    auto len = 5;
-    auto sz = serial.write(next_msg.c_str(), next_msg.len());
-    Serial.printf("serial.write(buf, len) == %d\n", sz);
+    size_t sz = 0;
+    sz = serial.write(next_msg.c_str(), next_msg.len());
+    // Serial.printf("serial.write(buf, len) == %d\n", sz);
     serial.enableTx(false);
     return sz;
   }

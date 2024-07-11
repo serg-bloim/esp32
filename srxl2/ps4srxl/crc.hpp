@@ -24,6 +24,10 @@ public:
   template <typename T>
   void add(T data)
   {
-    crc.add((byte *)&data, sizeof(T));
+    add((byte *)&data, sizeof(T));
+  }
+  void add(const byte* data, size_t size)
+  {
+    crc.add(data, size);
   }
 };

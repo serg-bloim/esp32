@@ -1,8 +1,7 @@
 #ifndef SrxlCommon_H
 #define SrxlCommon_H
 #include "ByteBuffer.hpp"
-#include <CRC16.h>
-#include <CRC.h>
+#include "crc.hpp"
 
 using SrxlByteBuffer = StaticByteBuffer<100>;
 using SrxlDeviceID = byte;
@@ -54,11 +53,7 @@ public:
         byte len = this->len();
         writeAt(2, (byte)(len+2)); // +2 for
 
-        CRC16 crc(CRC16_XMODEM_POLYNOME,
-                  CRC16_XMODEM_INITIAL,
-                  CRC16_XMODEM_XOR_OUT,
-                  CRC16_XMODEM_REV_IN,
-                  CRC16_XMODEM_REV_OUT);
+        Crc16XModem crc;
 
         crc.add(c_str(), len);
         uint16_t crcVal = crc.calc();

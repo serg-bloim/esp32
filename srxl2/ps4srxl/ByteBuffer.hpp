@@ -1,6 +1,6 @@
 #ifndef ByteBuffer_H
 #define ByteBuffer_H
-#include <Arduino.h>
+#include "Arduino.h"
 #include "usings.h"
 
 class ByteBuffer
@@ -13,7 +13,7 @@ private:
 public:
     ByteBuffer(byte *buf, size_t size) : buf(buf), size(size) {}
     template <typename T>
-    ByteBuffer(T &buf) : ByteBuffer((byte *)buf, sizeof(T)) {}
+    ByteBuffer(T &buf) : ByteBuffer(reinterpret_cast<byte*>(std::addressof(buf)), sizeof(T)) {}
     template <typename T>
     size_t write(T data)
     {
@@ -161,15 +161,15 @@ public:
     size_t peekInto(T &dst, size_t offset = 0)
     {
         size_t sz = sizeof(T);
-        if ((offset + 1) * sz > len())
+        if (offset + sz > len())
         {
             return 0;
         }
-        size_t read_pos = (start + offset * sz) % BUF_SIZE;
+        size_t read_pos = (start + offset) % BUF_SIZE;
         size_t part1_len = min(BUF_SIZE - read_pos, sz);
         size_t part2_len = sz - part1_len;
 
-        memcpy(&dst, buf + start, part1_len);
+        memcpy(&dst, buf + read_pos, part1_len);
         if (part2_len)
         {
             memcpy(((byte *)&dst) + part1_len, buf, part2_len);
