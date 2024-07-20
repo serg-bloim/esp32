@@ -163,6 +163,7 @@ public:
         size_t sz = sizeof(T);
         if (offset + sz > len())
         {
+            Serial.printf("Error peekInto(sizeof(T)=%d, %d). len() = %d\n", sz, offset, len());
             return 0;
         }
         size_t read_pos = (start + offset) % BUF_SIZE;

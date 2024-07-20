@@ -1,5 +1,6 @@
 #pragma once
 #include "SrxlDevice.hpp"
+#include "SrxlCommon.hpp"
 
 class RemoteReceiver : public SrxlMaster {
   struct CH_HANDLER {
@@ -13,7 +14,8 @@ private:
 protected:
   byte transmitter_id;
   void event_on_finished_handshake(bool result) override {
-    Serial.printf("RR::on_finished_handshake(%d)\n", result);
+    // Serial.printf("RR::on_finished_handshake(%d)\n", result);
+    // Serial.printf("RR::sizeof(SrxlGenericPack) == %d\n", sizeof(SrxlGenericPack));
     if (result) {
       transmitter_id = slaves[0];
     }
@@ -36,7 +38,7 @@ protected:
 
   void event_on_before_sending_msg(SrxlPacketBuffer &msg) override {
     SrxlMaster::event_on_before_sending_msg(msg);
-    Serial.printf("RemoteReceiver::event_on_before_sending_msg\n");
+    // Serial.printf("RemoteReceiver::event_on_before_sending_msg\n");
     if (state == State::CONTROL) {
       msg.clear();
       msg.p_type = PT_CONTROL;
