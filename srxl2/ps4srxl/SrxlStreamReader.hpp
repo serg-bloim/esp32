@@ -30,7 +30,7 @@ private:
 		crc.reset();
 	}
 	bool process(byte data) {
-		Serial.printf("Process(%02X) state = %d\n", data, state);
+		// Serial.printf("Process(%02X) state = %d\n", data, state);
 		if (state != READING_CRC) {
 			crc.add(data);
 		}

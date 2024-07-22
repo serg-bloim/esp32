@@ -1,3 +1,4 @@
+#include "utils.hpp"
 #pragma once
 #include "SrxlDevice.hpp"
 #include "SrxlCommon.hpp"
@@ -37,7 +38,6 @@ protected:
   }
 
   void event_on_before_sending_msg(SrxlPacketBuffer &msg) override {
-    SrxlMaster::event_on_before_sending_msg(msg);
     // Serial.printf("RemoteReceiver::event_on_before_sending_msg\n");
     if (state == State::CONTROL) {
       msg.clear();
@@ -57,11 +57,23 @@ protected:
           msg.write((channels[i].val));
         }
       }
+      Serial.printf("Sending %d %d %d %d\n", channels[0].val, channels[1].val, channels[2].val, channels[3].val);
       msg.pack();
     }
+    SrxlMaster::event_on_before_sending_msg(msg);
   }
 
 public:
   RemoteReceiver(SoftwareSerial &serial, SrxlDeviceID id, int time_frame = 22)
     : SrxlMaster(serial, id, time_frame) {}
+
+  void set_channel(uint8_t ch, int32_t v) {
+    assert(ch < arraySize(this->channels));
+    this->channels[ch].val = v;
+  }
+
+  void enable_channel(uint8_t ch, bool enabled) {
+    assert(ch < arraySize(this->channels));
+    this->channels[ch].enabled = enabled;
+  }
 };
