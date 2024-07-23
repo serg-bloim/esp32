@@ -1,6 +1,7 @@
 #pragma once
 #include <PS4Controller.h>
 #include <functional>
+#include "utils.hpp"
 
 class Ps4Client;
 void on_packet_received_global();
@@ -27,13 +28,13 @@ public:
     pitch = parseSlider(ps4controller.RStickY());
     roll = parseSlider(ps4controller.RStickX());
     yaw = parseSlider(ps4controller.LStickX());
-    Serial.printf("Packet received throttle: %d, pitch: %d, roll: %d, yaw: %d\n", throttle, pitch, roll, yaw);
+    // Serial.printf("Packet received throttle: %d, pitch: %d, roll: %d, yaw: %d\n", throttle, pitch, roll, yaw);
   }
 protected:
 private:
   PS4Controller& ps4controller;
   int32_t parseThrottle(){
-    return 0;
+    return parseSlider(ps4controller.LStickY());
   }
   int32_t parseSlider(int8_t v){
     v = cap(v, -127, 127);

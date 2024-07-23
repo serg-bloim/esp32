@@ -174,18 +174,13 @@ protected:
     byte cmd = 0;
     byte reply_id = slaves[0];
     byte rssi = 0;
-    byte frame_losses = 0;
-    uint32_t ch_mask = 0;
+    uint16_t frame_losses = 0;
+    uint32_t ch_mask = build_ch_mask();
+    uint32_t ch_mask2 = ch_mask;
     msg.write(cmd);
     msg.write(reply_id);
     msg.write(rssi);
     msg.write(frame_losses);
-    for (auto ch : channels) {
-      if (ch.enabled) {
-        ch_mask |= 1;
-      }
-      ch_mask << 1;
-    }
     msg.write(ch_mask);
     for (auto ch : channels) {
       if (ch.enabled) {
@@ -194,8 +189,21 @@ protected:
     }
     msg.pack();
   }
-  uint16_t convert_ch_data(int32_t v) {
-    return 0x8000;
+  uint32_t build_ch_mask() {
+    uint32_t mask = 0;
+    uint32_t flag = 1;
+    for (auto ch : channels) {
+      if (ch.enabled) {
+        mask |= flag;
+        // Serial.printf("build_ch_mask -> enabled %08X %08X\n", mask, flag);
+      }
+      flag = flag << 1;
+    }
+    return mask;
+  }
+
+  uint16_t convert_ch_data(uint16_t v) {
+    return v;
   }
   void on_received_handshake(SrxlHandshakePack &msg) {
     if (!slaves.contains(msg.data.src_id)) {
@@ -219,6 +227,16 @@ public:
       ch.enabled = false;
       ch.value = 0;
     }
+  }
+  
+  void set_channel(uint8_t ch, uint16_t v) {
+    assert(ch < arraySize(this->channels));
+    this->channels[ch].value = v;
+  }
+
+  void enable_channel(uint8_t ch, bool enabled) {
+    assert(ch < arraySize(this->channels));
+    this->channels[ch].enabled = enabled;
   }
 };
 #endif  // SrxlDevice_H
