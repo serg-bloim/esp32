@@ -35,6 +35,10 @@ void loop() {
   srxl.set_channel(1, convert_signed(ps4.pitch));
   srxl.set_channel(2, convert_signed(ps4.roll));
   srxl.set_channel(3, convert_signed(ps4.yaw));
+  srxl.set_channel(0, 0);
+  srxl.set_channel(1, 0xD540);
+  srxl.set_channel(2, 0xD540);
+  srxl.set_channel(3, 0xD540);
   // srxl.set_channel(4, ps4.safe_mode);
   // srxl.set_channel(5, ps4.panic_mode);
   // srxl.set_channel(6, ps4.ch7);

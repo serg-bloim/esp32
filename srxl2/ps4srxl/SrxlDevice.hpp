@@ -20,7 +20,7 @@ private:
 protected:
   SrxlDeviceID id;
   uint32_t uid = 0x524753;
-  byte baud_rate = 1;
+  byte baud_rate = 0;
   byte info = 1;
   byte priority = 0xA;
 
@@ -172,7 +172,7 @@ protected:
     msg.clear();
     msg.p_type = PT_CONTROL;
     byte cmd = 0;
-    byte reply_id = slaves[0];
+    byte reply_id = 0;
     byte rssi = 0;
     uint16_t frame_losses = 0;
     uint32_t ch_mask = build_ch_mask();
@@ -203,7 +203,7 @@ protected:
   }
 
   uint16_t convert_ch_data(uint16_t v) {
-    return v;
+    return 0xFFFC & v;
   }
   void on_received_handshake(SrxlHandshakePack &msg) {
     if (!slaves.contains(msg.data.src_id)) {
