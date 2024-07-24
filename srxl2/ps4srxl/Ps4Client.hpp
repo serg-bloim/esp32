@@ -28,7 +28,7 @@ public:
     pitch = parseSlider(ps4controller.RStickY());
     roll = parseSlider(ps4controller.RStickX());
     yaw = parseSlider(ps4controller.LStickX());
-    // Serial.printf("Packet received throttle: %d, pitch: %d, roll: %d, yaw: %d\n", throttle, pitch, roll, yaw);
+    // Serial.printf("Packet received throttle: % 6d, pitch: % 6d, roll: % 6d, yaw: % 6d\n", throttle, pitch, roll, yaw);
   }
 protected:
 private:

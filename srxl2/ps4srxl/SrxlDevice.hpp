@@ -145,13 +145,13 @@ protected:
         msg.write(this->uid);
         msg.pack();
       } else {
-        Serial.println("Ended handshake loop, but no slaves found.");
+        // Serial.println("Ended handshake loop, but no slaves found.");
         reset();
       }
     } else {
       msg.clear();
       byte dst_id = handshake_order[handshake_order_ind++];
-      Serial.println("handshake 1");
+      // Serial.println("handshake 1");
 
 
 
@@ -182,11 +182,15 @@ protected:
     msg.write(rssi);
     msg.write(frame_losses);
     msg.write(ch_mask);
+    Serial.print("Channels: ");
     for (auto ch : channels) {
       if (ch.enabled) {
-        msg.write(convert_ch_data(ch.value));
+        auto v = convert_ch_data(ch.value);
+        msg.write(v);
+        Serial.printf("% 5d(% 5d) ", v, ch.value);
       }
     }
+    Serial.print("\n");
     msg.pack();
   }
   uint32_t build_ch_mask() {
@@ -203,7 +207,7 @@ protected:
   }
 
   uint16_t convert_ch_data(uint16_t v) {
-    return 0xFFFC & v;
+    return 0xFFFC & cap(v, 0x2AA0, 0xD554);
   }
   void on_received_handshake(SrxlHandshakePack &msg) {
     if (!slaves.contains(msg.data.src_id)) {
@@ -223,6 +227,7 @@ public:
   SrxlMaster(SoftwareSerial &serial, SrxlDeviceID id, int time_frame = 22)
     : SrxlDevice(serial, id, time_frame) {
     reset();
+    // slaves.add(0x31);
     for (auto ch : channels) {
       ch.enabled = false;
       ch.value = 0;
