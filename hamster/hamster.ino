@@ -8,6 +8,7 @@ const int backend_field = 2;
 const bool http_on = true;
 
 const int pin = 34;
+const int ledPin = 2;
 const int treshold = 1;
 bool state = false;
 bool has_state_changed = false;
@@ -15,6 +16,7 @@ int rotations = 0;
 
 void setup() {
   pinMode(pin, INPUT);
+  pinMode (ledPin, OUTPUT);
   Serial.begin(9600);
   delay(1000);
   WiFi.begin(ssid, password);
@@ -31,17 +33,27 @@ void setup() {
 
 void loop() {
   processState();
+  checkLed();
   if(has_state_changed){
     Serial.printf("State: %d \n", state);
     if(state == 0){
       // The signal has just been HIGH and wend back LOW
       rotations++;
+      fleshLed();
       Serial.printf("Rotations: %d \n", rotations);
     }
   }
-  delay(50);
+  delay(0);
 }
-
+unsigned long led_on_until = 0;
+void fleshLed(){
+  led_on_until = millis() + 100;
+}
+void checkLed(){
+  int lvl = LOW;
+  if(millis() < led_on_until) lvl = HIGH;
+  digitalWrite(ledPin, lvl);
+}
 void updateBackend(){
   xTaskCreatePinnedToCore(
   updateBackendTask,     // Task function.
@@ -74,7 +86,7 @@ void updateBackendTask(void * pvParameters){
       }
       Serial.println("Finished http");
     }
-    delay(15000);
+    vTaskDelay(15000);
   }
 }
 
