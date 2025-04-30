@@ -4,14 +4,16 @@
 const char* ssid = "ASUS";
 const char* password = "A4388Ed8843";
 const char* api_key = "7AKI7ZVF3RPEIS2Y";
+const bool http_on = true;
 
 const int pin = 34;
-const int treshold = 2048;
+const int treshold = 1;
 bool state = false;
 bool has_state_changed = false;
 int rotations = 0;
 
 void setup() {
+  pinMode(pin, INPUT);
   Serial.begin(9600);
   delay(1000);
   WiFi.begin(ssid, password);
@@ -31,25 +33,32 @@ void loop() {
       // The signal has just been HIGH and wend back LOW
       rotations++;
       Serial.printf("Rotations: %d \n", rotations);
-      if(WiFi.status() == WL_CONNECTED){
-        HTTPClient http;
-        String url = String("https://api.thingspeak.com/update?api_key=") + api_key + "&field2=" + String(rotations);
-        http.begin(url);
-        int status_code = http.GET();
-        Serial.printf("Backend response: %d\n", status_code);
-        http.end();
-      }else{
-        Serial.println("WiFi not connected");
-      }
+      updateBackend();
     }
   }
   delay(50);
 }
 
+void updateBackend(){
+  if(http_on && WiFi.status() == WL_CONNECTED){
+    unsigned long start = millis();
+    HTTPClient http;
+    String url = String("https://api.thingspeak.com/update?api_key=") + api_key + "&field2=" + String(rotations);
+    http.begin(url);
+    int status_code = http.GET();
+    Serial.printf("Backend response: %d\n", status_code);
+    http.end();
+    unsigned long end = millis();
+    Serial.printf("Time took for http: %d\n", end - start);
+  }else{
+    Serial.println("WiFi not connected");
+  }
+}
+
 bool processState(){
-  int adcVal = analogRead(pin);
+  int adcVal = digitalRead(pin);
   // int adcVal = 100;
-  bool new_state = adcVal > treshold;
+  bool new_state = adcVal < treshold;
   // bool new_state = true;
   has_state_changed = new_state != state;
   state = new_state;
