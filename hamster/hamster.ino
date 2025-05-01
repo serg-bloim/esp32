@@ -4,7 +4,9 @@
 const char* ssid = "ASUS";
 const char* password = "A4388Ed8843";
 const char* api_key = "7AKI7ZVF3RPEIS2Y";
-const int backend_field = 2;
+const int backend_field_rotation = 1;
+const int backend_field_rpm = 2;
+const int backend_field_errs = 3;
 const bool http_on = true;
 
 const int pin = 34;
@@ -13,7 +15,7 @@ const int treshold = 1;
 bool state = false;
 bool has_state_changed = false;
 int rotations = 0;
-
+int network_errors = 0;
 void setup() {
   pinMode(pin, INPUT);
   pinMode (ledPin, OUTPUT);
@@ -66,27 +68,38 @@ void updateBackend(){
 }
 
 unsigned long next_available_run = 0;
+unsigned long last_sample_ms = 0;
 void updateBackendTask(void * pvParameters){
   int last_rotations = rotations;
   for(;;){
-    if(rotations>last_rotations){
+      int rotation_delta = rotations - last_rotations;
+      unsigned long now = millis();
+      unsigned long time_delta = now - last_sample_ms;
+      last_sample_ms = now;
       last_rotations = rotations;
+      int rpm = rotation_delta * 60 * 1000 / time_delta;
       if(http_on && WiFi.status() == WL_CONNECTED){
         unsigned long start = millis();
         HTTPClient http;
-        String url = String("https://api.thingspeak.com/update?api_key=") + api_key + "&field"+String(backend_field)+"=" + String(last_rotations);
+        String url = String("https://api.thingspeak.com/update?api_key=") + api_key
+         + "&field"+String(backend_field_rotation)+"=" + String(last_rotations)
+         + "&field"+String(backend_field_rpm)+"=" + String(rpm)
+         + "&field"+String(backend_field_errs)+"=" + String(network_errors);
         http.begin(url);
         int status_code = http.GET();
-        Serial.printf("Setting rotations to %d. Backend response: %d\n", last_rotations, status_code);
+        Serial.printf("Setting rotations to %d, rpm = %d. Backend response: %d\n", last_rotations, rpm, status_code);
         http.end();
         unsigned long end = millis();
         Serial.printf("Time took for http: %d\n", end - start);
       }else{
         Serial.println("WiFi not connected");
+        network_errors++;
+        WiFi.begin(ssid, password);
       }
       Serial.println("Finished http");
-    }
-    vTaskDelay(15000);
+    int delay = 15000;
+    int till_next_run = delay - (millis() % delay);
+    vTaskDelay(till_next_run);
   }
 }
 
@@ -95,7 +108,7 @@ int readLastValueFromBackend(){
   if(http_on && WiFi.status() == WL_CONNECTED){
     unsigned long start = millis();
     HTTPClient http;
-    String url = String("https://api.thingspeak.com/channels/2940912/fields/") + String(backend_field)+"/last.txt?api_key="+api_key;
+    String url = String("https://api.thingspeak.com/channels/2940912/fields/") + String(backend_field_rotation)+"/last.txt?api_key="+api_key;
     http.begin(url);
     int status_code = http.GET();
     Serial.printf("Backend response: %d\n", status_code);
