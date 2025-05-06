@@ -9,7 +9,7 @@ const int backend_field_rpm = 2;
 const int backend_field_errs = 3;
 const bool http_on = true;
 
-const int pin = 34;
+const int pin = 36;
 const int ledPin = 2;
 const int treshold = 30;
 const int buffer_treshold = 10;
