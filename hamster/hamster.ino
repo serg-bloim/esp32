@@ -3,7 +3,7 @@
 
 const char* ssid = "ASUS";
 const char* password = "A4388Ed8843";
-const char* api_key = "7AKI7ZVF3RPEIS2Y";
+const char* api_key = "UQH38MC1XHXBTAML";
 const int backend_field_rotation = 1;
 const int backend_field_rpm = 2;
 const int backend_field_errs = 3;
@@ -11,7 +11,8 @@ const bool http_on = true;
 
 const int pin = 34;
 const int ledPin = 2;
-const int treshold = 1;
+const int treshold = 30;
+const int buffer_treshold = 10;
 bool state = false;
 bool has_state_changed = false;
 int rotations = 0;
@@ -19,7 +20,7 @@ int network_errors = 0;
 void setup() {
   pinMode(pin, INPUT);
   pinMode (ledPin, OUTPUT);
-  Serial.begin(9600);
+  Serial.begin(115200);
   delay(1000);
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
@@ -32,6 +33,41 @@ void setup() {
   Serial.printf("Backend rotations: %d\n", rotations);
   updateBackend();
 }
+class RunningMean{
+  private:
+    int last_val = 0;
+    int current_val = 0;
+    int current_measurements = 0;
+    unsigned long current_period_ms = 0;
+  public:
+    int last_measurements = 0;
+    int interval_ms = 5;
+    void update(){
+      auto now = millis();
+      if(now > current_period_ms + interval_ms){
+        if (current_measurements > 0)
+          last_val = current_val / current_measurements;
+        else
+          last_val = -1;
+        last_measurements = current_measurements;
+        current_measurements = 0;
+        current_val = 0;
+        current_period_ms = now;
+      }
+    }
+    void add(int val){
+      update();
+      current_measurements++;
+      current_val += val;
+    }
+    int get(){
+      update();
+      return last_val;
+    }
+};
+
+
+RunningMean pin_mean;
 
 void loop() {
   processState();
@@ -126,11 +162,15 @@ int readLastValueFromBackend(){
 }
 
 bool processState(){
-  int adcVal = digitalRead(pin);
-  // int adcVal = 100;
-  bool new_state = adcVal < treshold;
+  int lvl = analogRead(pin);
+  pin_mean.add(lvl);
+  int mean_lvl = pin_mean.get();
+  int NEUTRAL_STATE = 1820;
+  auto diff = abs(mean_lvl - NEUTRAL_STATE);
+  bool new_state = diff > treshold;
+  bool is_buffer_zone = abs(diff - treshold) < buffer_treshold;
   // bool new_state = true;
-  has_state_changed = new_state != state;
-  state = new_state;
+  has_state_changed = new_state != state && !is_buffer_zone;
+  if(has_state_changed) state = new_state;
   return has_state_changed;
 }
