@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include "utils.h"
 
 const char* ssid = "ASUS";
 const char* password = "A4388Ed8843";
@@ -33,47 +34,17 @@ void setup() {
   Serial.printf("Backend rotations: %d\n", rotations);
   updateBackend();
 }
-class RunningMean{
-  private:
-    int last_val = 0;
-    int current_val = 0;
-    int current_measurements = 0;
-    unsigned long current_period_ms = 0;
-  public:
-    int last_measurements = 0;
-    int interval_ms = 5;
-    void update(){
-      auto now = millis();
-      if(now > current_period_ms + interval_ms){
-        if (current_measurements > 0)
-          last_val = current_val / current_measurements;
-        else
-          last_val = -1;
-        last_measurements = current_measurements;
-        current_measurements = 0;
-        current_val = 0;
-        current_period_ms = now;
-      }
-    }
-    void add(int val){
-      update();
-      current_measurements++;
-      current_val += val;
-    }
-    int get(){
-      update();
-      return last_val;
-    }
-};
 
+RunningMean pin_mean(5);
+RunningMean neutral_state(5000, analogRead(pin));
 
-RunningMean pin_mean;
-
+int lvl, mean_lvl;
 void loop() {
   processState();
   checkLed();
+  // Serial.printf("State: %d, Lvl: %d, Mean_lvl: %d, Neutral_state: %d, Rots: %d \n", state, lvl, mean_lvl, neutral_state.get(), rotations);
   if(has_state_changed){
-    Serial.printf("State: %d \n", state);
+    // Serial.printf("State: %d, Lvl: %d, Mean_lvl: %d \n", state, lvl, mean_lvl);
     if(state == 0){
       // The signal has just been HIGH and wend back LOW
       rotations++;
@@ -160,16 +131,14 @@ int readLastValueFromBackend(){
   }
   return backend_rotations;
 }
-
 bool processState(){
-  int lvl = analogRead(pin);
+  lvl = analogRead(pin);
   pin_mean.add(lvl);
-  int mean_lvl = pin_mean.get();
-  int NEUTRAL_STATE = 1820;
-  auto diff = abs(mean_lvl - NEUTRAL_STATE);
+  neutral_state.add(lvl);
+  mean_lvl = pin_mean.get();
+  auto diff = abs(mean_lvl - neutral_state.get());
   bool new_state = diff > treshold;
   bool is_buffer_zone = abs(diff - treshold) < buffer_treshold;
-  // bool new_state = true;
   has_state_changed = new_state != state && !is_buffer_zone;
   if(has_state_changed) state = new_state;
   return has_state_changed;
