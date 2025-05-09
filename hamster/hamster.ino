@@ -6,7 +6,7 @@
 
 const char* ssid = "ASUS";
 const char* password = "A4388Ed8843";
-const char* api_key = "PBSU43PK83X5IWAE";
+const char* api_key = "UQH38MC1XHXBTAML";
 const int backend_field_rotation = 1;
 const int backend_field_rpm = 2;
 const int backend_field_errs = 3;
@@ -33,13 +33,13 @@ void setup() {
       Serial.print(".");
     }
     Serial.println("\nConnected");
-    updateBackend();
     rotations = readLastValueFromBackend();
+    updateBackend();
   }
   Serial.printf("Backend rotations: %d\n", rotations);
 }
 
-RunningMean pin_mean(2);
+RunningMean pin_mean(2, analogRead(pin));
 RunningMean overall_state(5000, analogRead(pin));
 RunningMean neutral_state(5000, analogRead(pin));
 
@@ -118,7 +118,7 @@ int readLastValueFromBackend(){
   if(http_on && WiFi.status() == WL_CONNECTED){
     unsigned long start = millis();
     HTTPClient http;
-    String url = String("https://api.thingspeak.com/channels/2953142/fields/") + String(backend_field_rotation)+"/last.txt?api_key="+api_key;
+    String url = String("https://api.thingspeak.com/channels/2940912/fields/") + String(backend_field_rotation)+"/last.txt?api_key="+api_key;
     http.begin(url);
     int status_code = http.GET();
     Serial.printf("Backend response: %d\n", status_code);
