@@ -2,9 +2,11 @@
 #include <HTTPClient.h>
 #include "utils.h"
 
+#define WIFI_ON true
+
 const char* ssid = "ASUS";
 const char* password = "A4388Ed8843";
-const char* api_key = "UQH38MC1XHXBTAML";
+const char* api_key = "PBSU43PK83X5IWAE";
 const int backend_field_rotation = 1;
 const int backend_field_rpm = 2;
 const int backend_field_errs = 3;
@@ -12,7 +14,7 @@ const bool http_on = true;
 
 const int pin = 36;
 const int ledPin = 2;
-const int treshold = 30;
+const int treshold = 60;
 const int buffer_treshold = 10;
 bool state = false;
 bool has_state_changed = false;
@@ -20,29 +22,55 @@ int rotations = 0;
 int network_errors = 0;
 void setup() {
   pinMode(pin, INPUT);
+  pinMode(33, INPUT_PULLUP);
   pinMode (ledPin, OUTPUT);
   Serial.begin(115200);
   delay(1000);
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  if(WIFI_ON){
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("\nConnected");
+    updateBackend();
+    // rotations = readLastValueFromBackend();
   }
-  Serial.println("\nConnected");
-  rotations = readLastValueFromBackend();
   Serial.printf("Backend rotations: %d\n", rotations);
-  updateBackend();
 }
 
-RunningMean pin_mean(5);
-RunningMean neutral_state(5000, analogRead(pin));
+RunningMean pin_mean(2);
+RunningMean overall_state(1000, analogRead(pin));
+RunningMean neutral_state(1000, analogRead(pin));
 
 int lvl, mean_lvl;
+int iter = 0;
+int last_lvl = 0;
+int min_val = 4095, max_val = 0, min_avg = 4095, max_avg = 0, cluster_avg_min=4095, cluster_avg_max = 0;
 void loop() {
+  iter++;
   processState();
+  if(digitalRead(33) == LOW){
+    min_val = 4095;
+    max_val = 0;
+    min_avg = 4095;
+    max_avg = 0;
+  }
+  if(lvl > max_val) max_val = lvl;
+  if(lvl < min_val) min_val = lvl;
+  if(mean_lvl > max_avg) max_avg = mean_lvl;
+  if(mean_lvl < min_avg) min_avg = mean_lvl;
+  // if(mean_lvl > max_avg) max_avg = lvl;
+  // if(mean_lvl < min_avg) min_avg = lvl;
   checkLed();
-  // Serial.printf("State: %d, Lvl: %d, Mean_lvl: %d, Neutral_state: %d, Rots: %d \n", state, lvl, mean_lvl, neutral_state.get(), rotations);
+  if(mean_lvl != last_lvl){
+    // Serial.printf("Lvl changed: %d, Lvl: %d, Mean_lvl: %d, Neutral_state: %d, Rots: %d \n", state, lvl, mean_lvl, neutral_state.get(), rotations);
+  }
+  last_lvl = mean_lvl;
+  if(iter % 10000 == 0)
+    Serial.printf("Min: %-4d, max: %-4d, avg: %-4d(%-4d - %-4d), samples: %-4d, neutral/overall: %-4d / %-4d\n", min_val, max_val,mean_lvl, min_avg, max_avg, pin_mean.last_measurements, neutral_state.get(), overall_state.get());
+    // Serial.printf("State: %d, Lvl: %d, Mean_lvl: %d, Neutral_state: %d, Rots: %d \n", state, lvl, mean_lvl, neutral_state.get(), rotations);
   if(has_state_changed){
     // Serial.printf("State: %d, Lvl: %d, Mean_lvl: %d \n", state, lvl, mean_lvl);
     if(state == 0){
@@ -115,7 +143,7 @@ int readLastValueFromBackend(){
   if(http_on && WiFi.status() == WL_CONNECTED){
     unsigned long start = millis();
     HTTPClient http;
-    String url = String("https://api.thingspeak.com/channels/2940912/fields/") + String(backend_field_rotation)+"/last.txt?api_key="+api_key;
+    String url = String("https://api.thingspeak.com/channels/2953142/fields/") + String(backend_field_rotation)+"/last.txt?api_key="+api_key;
     http.begin(url);
     int status_code = http.GET();
     Serial.printf("Backend response: %d\n", status_code);
@@ -134,7 +162,21 @@ int readLastValueFromBackend(){
 bool processState(){
   lvl = analogRead(pin);
   pin_mean.add(lvl);
-  neutral_state.add(lvl);
+  overall_state.add(lvl);
+  int e1 = overall_state.get_min();
+  int e2 = overall_state.get_max();
+  int mid = overall_state.get();
+  int cluster_min, cluster_max;
+  if(abs(mid - e1) < abs(e2-mid)){
+    cluster_min = e1;
+    cluster_max = mid;
+  }else{
+    cluster_min = mid;
+    cluster_max = e2;
+  }
+  if(lvl >= cluster_min && lvl <= cluster_max){
+    neutral_state.add(lvl);
+  }
   mean_lvl = pin_mean.get();
   auto diff = abs(mean_lvl - neutral_state.get());
   bool new_state = diff > treshold;
